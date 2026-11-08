@@ -1,0 +1,58 @@
+# HTB Starting Point: Fawn
+
+**Topic:** Insecure file transfer (FTP, anonymous access)
+**Tools:** Nmap, FTP client
+**Difficulty:** Very Easy
+
+## Summary
+The target ran an FTP server that allowed anonymous login, letting anyone
+on the network list and download files without an account.
+
+## Reconnaissance
+I scanned the target to find open ports and identify services:
+
+    nmap -sV [TARGET_IP]
+
+The scan showed FTP running on TCP port 21. Note that `-sV` only does
+service and version detection. Nmap's `-O` flag is what performs OS
+detection.
+
+## Exploitation
+1. Connected to the FTP service:
+
+       ftp [TARGET_IP]
+
+2. Logged in with the username `anonymous` and a blank password, which the
+   server accepted.
+3. Listed the remote files with `ls`, then downloaded the flag file:
+
+       get flag.txt
+
+4. Left the FTP session and read the downloaded file in my local terminal.
+   (Flag omitted.) I originally left the session with Ctrl+Z, which only
+   suspends it. The clean way is `bye` (see "What I learned").
+
+## Impact
+Anyone able to reach port 21 could browse and download files without
+authentication. Depending on the server's permissions, anonymous users may
+also be able to upload or modify files, which could expose sensitive data
+or let an attacker plant malicious files.
+
+## Remediation
+- Disable anonymous FTP access unless it is truly needed.
+- If anonymous access is required, restrict it to a dedicated, read-only
+  directory with nothing sensitive in it.
+- Use SFTP or FTPS instead of plain FTP so credentials and data are
+  encrypted.
+- Restrict access to the service with a firewall.
+
+## What I learned
+- FTP commands (`ls`, `cd`, `get`, `put`) run inside the FTP session, while
+  operating system commands like `cat` run in the local shell.
+- `get` copies a remote file to the local directory but does not display
+  it.
+- Help flags vary by program: `-h` is common, and `help` or `?` work
+  inside an FTP session.
+- Anonymous access should be treated as a finding any time it appears.
+- Ctrl+Z suspends a process instead of closing it. I now use `bye` to end
+  an FTP session and `jobs` to check for stray suspended processes.
